@@ -2,40 +2,49 @@ package warehouse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import warehouse.model.WarehouseData;
 import warehouse.model.ProductData;
 import warehouse.repository.WarehouseRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api") // Alle Endpunkte starten mit /api
+@RequestMapping("/api")
 public class WarehouseController {
 
     @Autowired
     private WarehouseRepository repository;
 
-    // POST /product: Fügt ein neues Produkt hinzu
+    // POST /product: Fügt ein neues Produkt zu Lager "1" hinzu
     @PostMapping("/product")
-    public ProductData addProduct(@RequestBody ProductData product) {
-        return repository.save(product);
+    public WarehouseData addProduct(@RequestBody ProductData product) {
+        WarehouseData wh = repository.findById("1").orElse(
+                new WarehouseData("1", "Standard Lager", 4020, "Linz", "Austria")
+        );
+        wh.getProductData().add(product);
+        return repository.save(wh);
     }
 
-    // GET /product: Abrufen aller Produkte (Lagerbestand)
+    // GET /product: Abrufen aller Produkte aus allen Lagern (flache Liste)
     @GetMapping("/product")
     public List<ProductData> getAllProducts() {
-        return repository.findAll();
+        List<ProductData> allProducts = new ArrayList<>();
+        for (WarehouseData wh : repository.findAll()) {
+            allProducts.addAll(wh.getProductData());
+        }
+        return allProducts;
     }
 
-    // GET /warehouse: Abrufen der Daten für ein bestimmtes Lager
-    // (In den Grundlagen reicht es, nach einer ID zu filtern)
+    // GET /warehouse/{id}: Daten für ein bestimmtes Lager abrufen
     @GetMapping("/warehouse/{id}")
-    public List<ProductData> getWarehouse(@PathVariable String id) {
-        return repository.findByWarehouseID(id);
+    public WarehouseData getWarehouse(@PathVariable String id) {
+        return repository.findById(id).orElse(null);
     }
 
-    // Einfache Variante für GET /warehouse (alle Daten)
+    // GET /warehouse: Alle Lager abrufen
     @GetMapping("/warehouse")
-    public List<ProductData> getAllWarehouses() {
+    public List<WarehouseData> getAllWarehouses() {
         return repository.findAll();
     }
 }
